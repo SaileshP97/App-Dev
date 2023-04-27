@@ -78,8 +78,14 @@
     <p class="p1" style='color: rgb(188, 57, 31)'>{{ feedback }}</p>
     <p class="p2">Correct answer is : {{ correct_answer }}</p>
     {% endif %}
+    {% if end_of_quiz != 0%}
     <form method="POST" action="{{ url_for('question') }}">
       <input class="btn" type="submit" value="Next Question">
     </form>
+    {% elif end_of_quiz == 0%}
+    <form method="POST" action="{{ url_for('result') }}">
+      <input class="btn" type="submit" value="Show Report">
+    </form>
+    {% endif %}
   </body>
 </html>

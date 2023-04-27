@@ -15,11 +15,13 @@ class Quiz:
         self.score = 0
         self.num_questions = 0
         self.question_num = 0
+        self.num = 0
 
     def load_questions(self, num):
+        self.num = num
         with open(self.filename, newline='') as csvfile:
             reader = csv.reader(csvfile)
-            self.questions = random.choices(list(reader), k=num)
+            self.questions = random.choices(list(reader), k=self.num)
 
         self.num_questions = len(self.questions)
 
@@ -42,17 +44,13 @@ class Quiz:
     def evaluate_answer(self, answer, options):
         question, _, correct_answer,_ = self.ask_question()
         self.question_num += 1
-        print(answer)
-        print(options)
-        print(options[int(answer)-1])
-        print(correct_answer)
         if options[int(answer)-1] == correct_answer:
             self.score += 1
             feedback = "Correct!"
         else:
             feedback = "Incorrect"
 
-        if self.question_num >= self.num_questions:
+        if self.question_num > self.num_questions:
             return question, feedback, correct_answer,True
         else:
             return question, feedback, correct_answer, False
@@ -71,6 +69,10 @@ def index():
 @app.route('/start', methods=['GET', 'POST'])
 def start():
     num = request.form.get('num_questions', type=int)
+    quiz = jsonpickle.decode(session['quiz'])
+    if num is None:
+        num = quiz.num
+        session.pop('quiz', None)
     quiz = Quiz('words.csv')
     quiz.run(num)
     session['quiz'] = jsonpickle.encode(quiz)
@@ -95,13 +97,12 @@ def answer(options):
     answer = request.form['answer']
     quiz = jsonpickle.decode(session['quiz'])
     question, feedback, correct_answer, end_of_quiz = quiz.evaluate_answer(answer, options)
-
+    value = quiz.num_questions - quiz.question_num
     if end_of_quiz:
-        #session.pop('quiz', None)
         return redirect(url_for('result'))
     else:
         session['quiz'] = jsonpickle.encode(quiz)
-        return render_template('answer.html', question=question, options=options, feedback=feedback, correct_answer=correct_answer)
+        return render_template('answer.html', question=question, options=options, feedback=feedback, correct_answer=correct_answer, end_of_quiz=value)
 
 
 @app.route('/result', methods=['GET', 'POST'])
@@ -111,7 +112,6 @@ def result():
     quiz = jsonpickle.decode(session['quiz'])
     score = quiz.score
     num_questions = quiz.num_questions
-    session.pop('quiz', None)
     return render_template('result.html', score=score, num_questions=num_questions)
 
 
